@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+
+import argparse
+import requests
+import sys
+
+from bs4 import BeautifulSoup
+
+Host = 'ssl.animexx.de'
+CertificateFile = './certificates/*.animexx.de'
+
+def fatal(msg, exit_code = 1):
+	print(msg, file = sys.stderr)
+	exit(exit_code)
+
+def fetch_ktabhol_hash(userId, cookies):
+	url = 'https://{host}/mitglieder/steckbrief.php?id={userId:d}'.format(
+		host = Host,
+		userId = userId,
+	)
+	response = requests.get(url, cookies = cookies, verify = CertificateFile)
+
+	soup = BeautifulSoup(response.text, 'html.parser')
+
+	# Extract `ktabhol_hash`, which is written to an HTML `script` tag as an
+	# JavaScript assignment.
+	for scriptTag in soup.find_all('script'):
+		script = scriptTag.text.strip()
+		if script.startswith('ktabhol_hash'):
+			return script[16:-2]
+
+	return None
+
+def fetch_kt(ktabhol_hash, cookies):
+	url = 'https://{host}/items/ajax-ktabholen.php?hash={ktabhol_hash}'.format(
+		host = Host,
+		ktabhol_hash = ktabhol_hash,
+	)
+	response = requests.get(url, cookies = cookies, verify = CertificateFile)
+
+	try:
+		new_saldo = int(response.text)
+	except ValueError:
+		new_saldo = None
+
+	# Reasons for failure could be:
+	# - Already fetched today
+	# - Session expired (should trigger an error when fetching `ktabhol_hash`)
+	# - Not allowed to fetch (i.e. for "Sonderaccounts")
+
+	return new_saldo
+
+def main():
+	parser = argparse.ArgumentParser()
+	parser.add_argument(
+		'-u', '--user',
+		help = 'Your Animexx User-ID.',
+		type = int,
+		required = True,
+	)
+	parser.add_argument(
+		'-s', '--session',
+		help = 'Your `PHPSESSID` cookie value.',
+		type = str,
+		required = True,
+	)
+	parser.add_argument(
+		'-l', '--login',
+		help = 'Your `autologin` cookie value.',
+		type = str,
+		required = True,
+	)
+	args = parser.parse_args()
+
+	userId = args.user
+	sessionId = args.session
+	autologin = args.login
+
+	cookies = requests.cookies.RequestsCookieJar()
+	cookies.set('force_https', '1', domain = Host, path = '/')
+	cookies.set('PHPSESSID', sessionId, domain = Host, path = '/')
+	cookies.set('autologin', autologin, domain = Host, path = '/')
+
+	ktabhol_hash = fetch_ktabhol_hash(userId, cookies)
+	if not ktabhol_hash:
+		fatal('No `ktabhol_hash` found. Maybe the login has expired…', 2)
+
+	new_saldo = fetch_kt(ktabhol_hash, cookies)
+	if not new_saldo:
+		fatal('Failed to fetch KTs.')
+
+	print('Fetched KT, you now have {saldo:d} KTs.'.format(saldo = new_saldo))
+
+if __name__ == '__main__':
+	main()
