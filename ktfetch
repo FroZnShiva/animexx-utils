@@ -11,12 +11,12 @@ def fatal(msg, exit_code = 1):
 	print(msg, file = sys.stderr)
 	exit(exit_code)
 
-def fetch_ktabhol_hash(userId, cookies):
+def fetch_ktabhol_hash(userId, session):
 	url = 'https://{host}/mitglieder/steckbrief.php?id={userId:d}'.format(
 		host = animexx.Host,
 		userId = userId,
 	)
-	response = animexx.fetch(url, cookies)
+	response = animexx.fetch(url, session = session)
 
 	soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -29,12 +29,12 @@ def fetch_ktabhol_hash(userId, cookies):
 
 	return None
 
-def fetch_kt(ktabhol_hash, cookies):
+def fetch_kt(ktabhol_hash, session):
 	url = 'https://{host}/items/ajax-ktabholen.php?hash={ktabhol_hash}'.format(
 		host = animexx.Host,
 		ktabhol_hash = ktabhol_hash,
 	)
-	response = animexx.fetch(url, cookies)
+	response = animexx.fetch(url, session = session)
 
 	try:
 		new_saldo = int(response.text)
@@ -72,13 +72,13 @@ def main():
 
 	userId = args.user
 
-	cookies = animexx.bake_cookies(args.session, args.login)
+	session = animexx.new_session(args.session, args.login)
 
-	ktabhol_hash = fetch_ktabhol_hash(userId, cookies)
+	ktabhol_hash = fetch_ktabhol_hash(userId, session)
 	if not ktabhol_hash:
 		fatal('No `ktabhol_hash` found. Maybe the login has expired…', 2)
 
-	new_saldo = fetch_kt(ktabhol_hash, cookies)
+	new_saldo = fetch_kt(ktabhol_hash, session)
 	if not new_saldo:
 		fatal('Failed to fetch KTs.')
 

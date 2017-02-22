@@ -29,8 +29,8 @@ def main():
 	)
 	args = parser.parse_args()
 
-	cookies = animexx.bake_cookies(args.session, args.login)
-
+	sessionId = args.session
+	autologin = args.login
 	name = args.item
 
 	url = 'https://{host}/items/flohmarkt.php?b={itemInitial}'.format(
@@ -38,7 +38,7 @@ def main():
 		itemInitial = name[0],
 	)
 
-	response = animexx.fetch(url, cookies)
+	response = animexx.fetch(url, sessionId, autologin)
 
 	soup = BeautifulSoup(response.text, 'html.parser')
 

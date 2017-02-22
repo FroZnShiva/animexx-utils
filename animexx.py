@@ -16,19 +16,17 @@ class HttpsAdapter(HTTPAdapter):
 			ssl_version = ssl.PROTOCOL_TLSv1_2,
 		)
 
-def new_session():
+def new_session(sessionId, autologin):
 	session = requests.Session()
 	session.mount('https://', HttpsAdapter())
+	session.cookies.set('force_https', '1', domain = Host, path = '/')
+	session.cookies.set('PHPSESSID', sessionId, domain = Host, path = '/')
+	session.cookies.set('autologin', autologin, domain = Host, path = '/')
 	return session
 
-def fetch(url, cookies):
-	session = new_session()
-	response = session.get(url, cookies = cookies, verify = CertificateFile)
+def fetch(url, sessionId = None, autologin = None, session = None):
+	if not session:
+		assert(sessionId is not None and autologin is not None)
+		session = new_session(sessionId, autologin)
+	response = session.get(url, verify = CertificateFile)
 	return response
-
-def bake_cookies(sessionId, autologin):
-	cookies = requests.cookies.RequestsCookieJar()
-	cookies.set('force_https', '1', domain = Host, path = '/')
-	cookies.set('PHPSESSID', sessionId, domain = Host, path = '/')
-	cookies.set('autologin', autologin, domain = Host, path = '/')
-	return cookies
