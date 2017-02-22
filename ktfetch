@@ -3,7 +3,6 @@
 import animexx
 
 import argparse
-import requests
 import sys
 
 from bs4 import BeautifulSoup
@@ -17,7 +16,7 @@ def fetch_ktabhol_hash(userId, cookies):
 		host = animexx.Host,
 		userId = userId,
 	)
-	response = requests.get(url, cookies = cookies, verify = animexx.CertificateFile)
+	response = animexx.fetch(url, cookies)
 
 	soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -35,7 +34,7 @@ def fetch_kt(ktabhol_hash, cookies):
 		host = animexx.Host,
 		ktabhol_hash = ktabhol_hash,
 	)
-	response = requests.get(url, cookies = cookies, verify = animexx.CertificateFile)
+	response = animexx.fetch(url, cookies)
 
 	try:
 		new_saldo = int(response.text)

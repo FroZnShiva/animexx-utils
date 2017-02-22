@@ -4,7 +4,6 @@ import animexx
 
 import argparse
 import re
-import requests
 
 from bs4 import BeautifulSoup
 
@@ -38,7 +37,8 @@ def main():
 		host = animexx.Host,
 		itemInitial = name[0],
 	)
-	response = requests.get(url, cookies = cookies, verify = animexx.CertificateFile)
+
+	response = animexx.fetch(url, cookies)
 
 	soup = BeautifulSoup(response.text, 'html.parser')
 
