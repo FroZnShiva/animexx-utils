@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
+import animexx
+
 import argparse
 import requests
 import sys
 
 from bs4 import BeautifulSoup
-
-Host = 'ssl.animexx.de'
-CertificateFile = './certificates/*.animexx.de'
 
 def fatal(msg, exit_code = 1):
 	print(msg, file = sys.stderr)
@@ -15,10 +14,10 @@ def fatal(msg, exit_code = 1):
 
 def fetch_ktabhol_hash(userId, cookies):
 	url = 'https://{host}/mitglieder/steckbrief.php?id={userId:d}'.format(
-		host = Host,
+		host = animexx.Host,
 		userId = userId,
 	)
-	response = requests.get(url, cookies = cookies, verify = CertificateFile)
+	response = requests.get(url, cookies = cookies, verify = animexx.CertificateFile)
 
 	soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -33,10 +32,10 @@ def fetch_ktabhol_hash(userId, cookies):
 
 def fetch_kt(ktabhol_hash, cookies):
 	url = 'https://{host}/items/ajax-ktabholen.php?hash={ktabhol_hash}'.format(
-		host = Host,
+		host = animexx.Host,
 		ktabhol_hash = ktabhol_hash,
 	)
-	response = requests.get(url, cookies = cookies, verify = CertificateFile)
+	response = requests.get(url, cookies = cookies, verify = animexx.CertificateFile)
 
 	try:
 		new_saldo = int(response.text)
@@ -73,13 +72,8 @@ def main():
 	args = parser.parse_args()
 
 	userId = args.user
-	sessionId = args.session
-	autologin = args.login
 
-	cookies = requests.cookies.RequestsCookieJar()
-	cookies.set('force_https', '1', domain = Host, path = '/')
-	cookies.set('PHPSESSID', sessionId, domain = Host, path = '/')
-	cookies.set('autologin', autologin, domain = Host, path = '/')
+	cookies = animexx.bake_cookies(args.session, args.login)
 
 	ktabhol_hash = fetch_ktabhol_hash(userId, cookies)
 	if not ktabhol_hash:
