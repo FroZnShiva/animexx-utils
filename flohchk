@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+
+import animexx
+
+import argparse
+import re
+import requests
+
+from bs4 import BeautifulSoup
+
+def main():
+	parser = argparse.ArgumentParser()
+	parser.add_argument(
+		'-s', '--session',
+		help = 'Your `PHPSESSID` cookie value.',
+		type = str,
+		required = True,
+	)
+	parser.add_argument(
+		'-l', '--login',
+		help = 'Your `autologin` cookie value.',
+		type = str,
+		required = True,
+	)
+	parser.add_argument(
+		'-i', '--item',
+		help = 'The item\'s name',
+		type = str,
+		required = True,
+	)
+	args = parser.parse_args()
+
+	cookies = animexx.bake_cookies(args.session, args.login)
+
+	name = args.item
+
+	url = 'https://{host}/items/flohmarkt.php?b={itemInitial}'.format(
+		host = animexx.Host,
+		itemInitial = name[0],
+	)
+	response = requests.get(url, cookies = cookies, verify = animexx.CertificateFile)
+
+	soup = BeautifulSoup(response.text, 'html.parser')
+
+	value = None
+	for tr in soup.find_all('tr'):
+		text = tr.text.strip()
+		if text.startswith(name):
+			subtext = tr.find_all('b')[-1].text
+			value = re.findall(r'\d+', subtext)[0]
+			break
+
+	if not value:
+		exit(1)
+
+	print(value)
+
+if __name__ == '__main__':
+	main()
