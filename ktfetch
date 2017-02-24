@@ -44,13 +44,18 @@ def fetch_kt(ktabhol_hash, session):
 
 	log_debug('Response: %s' % response.text)
 
+	# Clean up text
+	text = response.text
+	if text.startswith('"') and text.endswith('"'):
+		text = text[1:-1]
+
 	try:
-		new_saldo = int(response.text)
+		new_saldo = int(text)
 	except ValueError:
 		new_saldo = None
 
 	# Reasons for failure could be:
-	# - Already fetched today
+	# - Already fetched today – might also return the current saldo
 	# - Session expired (should trigger an error when fetching `ktabhol_hash`)
 	# - Not allowed to fetch (i.e. for "Sonderaccounts")
 
