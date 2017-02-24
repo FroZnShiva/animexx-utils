@@ -7,9 +7,15 @@ import sys
 
 from bs4 import BeautifulSoup
 
+DEBUG = False
+
 def fatal(msg, exit_code = 1):
 	print(msg, file = sys.stderr)
 	exit(exit_code)
+
+def log_debug(msg):
+	if DEBUG:
+		print(msg, file = sys.stderr)
 
 def fetch_ktabhol_hash(userId, session):
 	url = 'https://{host}/mitglieder/steckbrief.php?id={userId:d}'.format(
@@ -36,6 +42,8 @@ def fetch_kt(ktabhol_hash, session):
 	)
 	response = animexx.fetch(url, session = session)
 
+	log_debug('Response: %s' % response.text)
+
 	try:
 		new_saldo = int(response.text)
 	except ValueError:
@@ -49,7 +57,15 @@ def fetch_kt(ktabhol_hash, session):
 	return new_saldo
 
 def main():
+	global DEBUG
+
 	parser = argparse.ArgumentParser()
+	parser.add_argument(
+		'--debug',
+		help = 'Enable debug output on `stderr`.',
+		action = 'store_true',
+		default = False,
+	)
 	parser.add_argument(
 		'-u', '--user',
 		help = 'Your Animexx User-ID.',
@@ -69,6 +85,8 @@ def main():
 		required = True,
 	)
 	args = parser.parse_args()
+
+	DEBUG = args.debug
 
 	userId = args.user
 
